@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>ico.ico</ApplicationIcon>
+	<SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\patch_icon.png" />
+    <None Remove="Resources\refresh_icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ico.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Drawing.Common">
+      <HintPath>C:\Program Files\dotnet\packs\Microsoft.WindowsDesktop.App.Ref\6.0.21\ref\net6.0\System.Drawing.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="UndertaleModLib">
+      <HintPath>..\UndertaleModTool\UndertaleModTool\bin\Debug\net6.0-windows\UndertaleModLib.dll</HintPath>
+    </Reference>
+    <Reference Include="UndertaleModTool">
+      <HintPath>..\UndertaleModTool\UndertaleModTool\bin\Debug\net6.0-windows\UndertaleModTool.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\patch_icon.png" />
+    <Resource Include="Resources\refresh_icon.png" />
+  </ItemGroup>
+
+</Project>

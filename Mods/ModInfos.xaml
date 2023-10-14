@@ -1,0 +1,40 @@
+﻿<UserControl x:Class="ModShardLauncher.Mods.ModInfos"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:ModShardLauncher.Mods" 
+      xmlns:undertale="clr-namespace:UndertaleModTool;assembly=UndertaleModTool"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800" d:DataContext="{d:DesignInstance local:Mod}">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="1*"/>
+            <ColumnDefinition Width="1*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <GridSplitter Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" Width="20"/>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Margin="3" Text="{StaticResource ModName}"/>
+        <TextBox Grid.Row="0" Grid.Column="1" Margin="3" Text="{Binding Name, Mode=OneWay}" IsReadOnly="True"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Margin="3" Text="{StaticResource ModDescription}"/>
+        <TextBox Grid.Row="1" Grid.Column="1" Margin="3" Grid.ColumnSpan="3" Text="{Binding Description, Mode=OneWay}" IsReadOnly="True"/>
+        <TextBlock Grid.Row="0" Grid.Column="3" Margin="3" Text="{StaticResource ModAuthor}"/>
+        <TextBox Grid.Row="0" Grid.Column="4" Margin="3" Text="{Binding Author, Mode=OneWay}" IsReadOnly="True"/>
+
+        <CheckBox Grid.Row="1" Grid.Column="4" Content="{StaticResource EnableMod}" 
+                  VerticalAlignment="Center" HorizontalAlignment="Center"
+                  IsChecked="{Binding isEnabled, Mode=TwoWay}"/>
+    </Grid>
+</UserControl>

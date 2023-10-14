@@ -1,0 +1,16 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <sys:String x:Key="FileHeader">File</sys:String>
+    <sys:String x:Key="FileHeader_Open">Open</sys:String>
+    <sys:String x:Key="RefreshButtonText">Refresh</sys:String>
+    <sys:String x:Key="PatchButtonText">Patch</sys:String>
+    <sys:String x:Key="SearchBoxText">Search by mod's name...</sys:String>
+    <sys:String x:Key="Welcome">Welcome!</sys:String>
+    <sys:String x:Key="Welcome_Use">Welcome to use ModShardLauncher!</sys:String>
+    <sys:String x:Key="Welcome_Desc">if you want to refresh mods, just paste them into the /Mods path and click the refresh button on the left</sys:String>
+    <sys:String x:Key="ModName">Mod Name</sys:String>
+    <sys:String x:Key="ModAuthor">Mod Author</sys:String>
+    <sys:String x:Key="ModDescription">Mod Description</sys:String>
+    <sys:String x:Key="EnableMod">Enable</sys:String>
+</ResourceDictionary>

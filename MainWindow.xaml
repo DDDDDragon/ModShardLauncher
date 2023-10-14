@@ -1,0 +1,162 @@
+﻿<Window x:Class="ModShardLauncher.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ModShardLauncher"
+        xmlns:converter="clr-namespace:ModShardLauncher.Converters"
+        xmlns:mod="clr-namespace:ModShardLauncher.Mods"
+        xmlns:undertale="clr-namespace:UndertaleModTool;assembly=UndertaleModTool"
+        mc:Ignorable="d"
+        Title="ModShardLauncher" Height="450" Width="800">
+    <Window.CommandBindings>
+        <CommandBinding Command="Open" Executed="Command_Open"/>
+    </Window.CommandBindings>
+    <Window.Resources>
+    </Window.Resources>
+    <Grid>
+        <DockPanel>
+            <Menu DockPanel.Dock="Top" 
+                  Foreground="{DynamicResource {x:Static SystemColors.MenuTextBrushKey}}"
+                  Background="{DynamicResource {x:Static SystemColors.MenuBrushKey}}">
+                <undertale:MenuItemDark Header="{StaticResource FileHeader}">
+                    <MenuItem Header="{StaticResource FileHeader_Open}" Command="Open"/>
+                </undertale:MenuItemDark>
+            </Menu>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="3*"/>
+                </Grid.ColumnDefinitions>
+                <Grid Grid.Column="0" Grid.Row="0" Margin="5,5,5,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,0,0" Orientation="Horizontal">
+                        <undertale:ButtonDark ToolTip="{StaticResource RefreshButtonText}" Margin="0,0,3,0" x:Name="RefreshButton" Click="RefreshButton_Click" >
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CurrentTab.HistoryPosition}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Image Name="RefreshButton_img" Source="/Resources/refresh_icon.png" Width="25">
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Opacity" Value="0.2" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+                        </undertale:ButtonDark>
+                        <undertale:ButtonDark ToolTip="{StaticResource PatchButtonText}" Margin="0,0,3,0" x:Name="PatchButton" Click="PatchButton_Click" >
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CurrentTab.HistoryPosition}" Value="0">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <Image Name="PatchButton_img" Source="/Resources/patch_icon.png" Width="25">
+                                <Image.Style>
+                                    <Style TargetType="Image">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Opacity" Value="0.2" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+                        </undertale:ButtonDark>
+                    </StackPanel>
+                    <undertale:TextBoxDark Grid.Column="1" x:Name="SearchBox" ToolTip="Search" TextChanged="SearchBox_TextChanged"
+                                           VerticalContentAlignment="Center">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Style.Resources>
+                                    <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                        <VisualBrush.Visual>
+                                            <Label Content="{StaticResource SearchBoxText}" Foreground="Gray" />
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </Style.Resources>
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value="">
+                                        <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="Text" Value="{x:Null}">
+                                        <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsKeyboardFocused" Value="True">
+                                        <Setter Property="Background" Value="{x:Null}" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </undertale:TextBoxDark>
+                </Grid>
+                <TreeView Grid.Column="0" Grid.Row="1" Name="MainTree" Margin="5" DataContext="{Binding Data}" AllowDrop="True"
+                          SelectedItemChanged="TreeView_SelectedItemChanged" TreeViewItem.Selected="MainTree_Selected"
+                          MouseDoubleClick="MainTree_MouseDoubleClick" PreviewMouseRightButtonDown="MainTree_PreviewMouseRightButtonDown" MouseDown="MainTree_MouseDown"
+                          KeyUp="MainTree_KeyUp" KeyDown="MainTree_KeyDown"
+                          VirtualizingStackPanel.IsVirtualizing="True"
+                          VirtualizingStackPanel.VirtualizationMode="Recycling">
+                    <TreeView.Resources>
+                    </TreeView.Resources>
+                    <TreeViewItem Header="Mods" IsExpanded="True">
+                    </TreeViewItem>
+                </TreeView>
+                <GridSplitter Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Center" VerticalAlignment="Stretch" ShowsPreview="True" Width="3"/>
+                <Grid Grid.Column="2" Grid.RowSpan="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="25"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="9*"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="{StaticResource Welcome}" VerticalContentAlignment="Center" 
+                               HorizontalContentAlignment="Center" BorderThickness="1,1,2,0" BorderBrush="Gray"
+                               MouseDown="Label_MouseDown" x:Name="TabLabel">
+                        </Label>
+                        <Border Grid.Column="1" BorderThickness="0,0,0,1" BorderBrush="LightGray"/>
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
+                        <ContentControl Margin="10" Content="{Binding Page, Mode=OneWay}" Name="ModThings">
+                            <ContentControl.Resources>
+                                <DataTemplate DataType="{x:Type undertale:DescriptionView}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Heading, Mode=OneWay}" FontWeight="Bold"/>
+                                        <Separator/>
+                                        <TextBlock Text="{Binding Description, Mode=OneWay}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                                
+                                <DataTemplate DataType="{x:Type mod:Mod}">
+                                    <mod:ModInfos/>
+                                </DataTemplate>
+                            </ContentControl.Resources>
+                        </ContentControl>
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </DockPanel>
+    </Grid>
+</Window>
