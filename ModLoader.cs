@@ -19,6 +19,7 @@ namespace ModShardLauncher
     {
         internal static UndertaleData Data => DataLoader.data;
         public static string ModPath => Path.Join(Environment.CurrentDirectory, "Mods");
+        public static GlobalDecompileContext context = new GlobalDecompileContext(Data, false);
         public static Dictionary<string, Mod> Mods = new Dictionary<string, Mod>();
         private static List<Assembly> Assemblies = new List<Assembly>();
         public static List<string> Weapons;
@@ -27,18 +28,29 @@ namespace ModShardLauncher
         {
             Trace.Write(msg);
         }
-        public static void Initalize()
+        public async static Task Initalize()
         {
-            Weapons = GetTable("gml_GlobalScript_table_weapons");
-            WeaponDescriptions = GetTable("gml_GlobalScript_table_weapons_text");
+            Weapons = await GetTable("gml_GlobalScript_table_weapons");
+            WeaponDescriptions = await GetTable("gml_GlobalScript_table_weapons_text");
         }
-        public static List<string> GetTable(string name)
+        public async static Task<List<string>> GetTable(string name)
         {
             var table = Data.Code.First(t => t.Name.Content.IndexOf(name) != -1);
-            GlobalDecompileContext context = new GlobalDecompileContext(Data, false);
             var text = Decompiler.Decompile(table, context);
             var ret = Regex.Match(text, "return (\\[.*\\])").Groups[1].Value;
             return JsonConvert.DeserializeObject<List<string>>(ret);
+        }
+        public async static Task<string> GetDecompiledFunction(string name)
+        {
+            var func = Data.Code.First(t => t.Name.Content.IndexOf(name) != -1);
+            var text = Decompiler.Decompile(func, context);
+            return text;
+        }
+        public async static Task<string> GetDisassemblyFunction(string name)
+        {
+            var func = Data.Code.First(t => t.Name.Content.IndexOf(name) != -1);
+            var text = func.Disassemble(Data.Variables, Data.CodeLocals.For(func));
+            return text;
         }
         public static void SetTable(List<string> table, string name)
         {

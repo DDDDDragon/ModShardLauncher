@@ -17,7 +17,7 @@ namespace ModShardLauncher.Mods
         public virtual string Author { get => "未知"; }
         public virtual string Description { get => "未知"; }
         public Mod() { }
-        internal bool isEnabled {  get; set; }
+        public bool isEnabled {  get; set; }
         public virtual void LoadAssembly()
         {
 

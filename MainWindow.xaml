@@ -19,8 +19,14 @@
             <Menu DockPanel.Dock="Top" 
                   Foreground="{DynamicResource {x:Static SystemColors.MenuTextBrushKey}}"
                   Background="{DynamicResource {x:Static SystemColors.MenuBrushKey}}">
-                <undertale:MenuItemDark Header="{StaticResource FileHeader}">
-                    <MenuItem Header="{StaticResource FileHeader_Open}" Command="Open"/>
+                <undertale:MenuItemDark Header="{DynamicResource FileHeader}">
+                    <MenuItem Header="{DynamicResource FileHeader_Open}" Command="Open"/>
+                </undertale:MenuItemDark>
+                <undertale:MenuItemDark Header="{DynamicResource SettingHeader}">
+                    <MenuItem Header="{DynamicResource SettingHeader_Lang}">
+                        <MenuItem Header="English" Click="Eng_Click"/>
+                        <MenuItem Header="中文" Click="Chi_Click"/>
+                    </MenuItem>
                 </undertale:MenuItemDark>
             </Menu>
             <Grid>
@@ -39,7 +45,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Margin="0,0,0,0" Orientation="Horizontal">
-                        <undertale:ButtonDark ToolTip="{StaticResource RefreshButtonText}" Margin="0,0,3,0" x:Name="RefreshButton" Click="RefreshButton_Click" >
+                        <undertale:ButtonDark ToolTip="{DynamicResource RefreshButtonText}" Margin="0,0,3,0" x:Name="RefreshButton" Click="RefreshButton_Click" >
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Style.Triggers>
@@ -61,7 +67,7 @@
                                 </Image.Style>
                             </Image>
                         </undertale:ButtonDark>
-                        <undertale:ButtonDark ToolTip="{StaticResource PatchButtonText}" Margin="0,0,3,0" x:Name="PatchButton" Click="PatchButton_Click" >
+                        <undertale:ButtonDark ToolTip="{DynamicResource PatchButtonText}" Margin="0,0,3,0" x:Name="PatchButton" Click="PatchButton_Click" >
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Style.Triggers>
@@ -91,7 +97,7 @@
                                 <Style.Resources>
                                     <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
                                         <VisualBrush.Visual>
-                                            <Label Content="{StaticResource SearchBoxText}" Foreground="Gray" />
+                                            <Label Content="{StaticResource SearchBoxText}" Foreground="Gray"/>
                                         </VisualBrush.Visual>
                                     </VisualBrush>
                                 </Style.Resources>

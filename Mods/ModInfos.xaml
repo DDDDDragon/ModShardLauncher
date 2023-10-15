@@ -26,14 +26,14 @@
 
         <GridSplitter Grid.Row="0" Grid.Column="2" Grid.RowSpan="2" Width="20"/>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Margin="3" Text="{StaticResource ModName}"/>
+        <TextBlock Grid.Row="0" Grid.Column="0" Margin="3" Text="{DynamicResource ModName}"/>
         <TextBox Grid.Row="0" Grid.Column="1" Margin="3" Text="{Binding Name, Mode=OneWay}" IsReadOnly="True"/>
-        <TextBlock Grid.Row="1" Grid.Column="0" Margin="3" Text="{StaticResource ModDescription}"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Margin="3" Text="{DynamicResource ModDescription}"/>
         <TextBox Grid.Row="1" Grid.Column="1" Margin="3" Grid.ColumnSpan="3" Text="{Binding Description, Mode=OneWay}" IsReadOnly="True"/>
-        <TextBlock Grid.Row="0" Grid.Column="3" Margin="3" Text="{StaticResource ModAuthor}"/>
+        <TextBlock Grid.Row="0" Grid.Column="3" Margin="3" Text="{DynamicResource ModAuthor}"/>
         <TextBox Grid.Row="0" Grid.Column="4" Margin="3" Text="{Binding Author, Mode=OneWay}" IsReadOnly="True"/>
 
-        <CheckBox Grid.Row="1" Grid.Column="4" Content="{StaticResource EnableMod}" 
+        <CheckBox Grid.Row="1" Grid.Column="4" Content="{DynamicResource EnableMod}" 
                   VerticalAlignment="Center" HorizontalAlignment="Center"
                   IsChecked="{Binding isEnabled, Mode=TwoWay}"/>
     </Grid>

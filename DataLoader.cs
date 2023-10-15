@@ -84,7 +84,7 @@ namespace ModShardLauncher
 
             loader.ShowDialog();
             await t;
-            ModLoader.Initalize();
+            await ModLoader.Initalize();
         }
         public static async Task<bool> DoSaveDialog()
         {

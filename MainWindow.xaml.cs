@@ -38,6 +38,30 @@ namespace ModShardLauncher
         {
             await DataLoader.DoOpenDialog();
         }
+        private void Eng_Click(object sender, RoutedEventArgs e)
+        {
+            var resDict = Application.Current.Resources.MergedDictionaries.First(t => t.Source.OriginalString == @"Language/en-us.xaml");
+            Application.Current.Resources.MergedDictionaries.Remove(resDict);
+            Application.Current.Resources.MergedDictionaries.Add(resDict);
+            if (ModThings.Content.GetType() == typeof(DescriptionView))
+                ModThings.Content = new DescriptionView(Application.Current.FindResource("Welcome_Use").ToString(),
+                Application.Current.FindResource("Welcome_Desc").ToString());
+            else OpenInTab(Selected.ToString());
+            ((SearchBox.Style.Resources.Values.Cast<object>().ToList()[0] as VisualBrush)
+                .Visual as Label).Content = Application.Current.FindResource("SearchBoxText").ToString();
+        }
+        private void Chi_Click(object sender, RoutedEventArgs e)
+        {
+            var resDict = Application.Current.Resources.MergedDictionaries.First(t => t.Source.OriginalString == @"Language/zh-cn.xaml");
+            Application.Current.Resources.MergedDictionaries.Remove(resDict);
+            Application.Current.Resources.MergedDictionaries.Add(resDict);
+            if (ModThings.Content.GetType() == typeof(DescriptionView))
+                ModThings.Content = new DescriptionView(Application.Current.FindResource("Welcome_Use").ToString(),
+                Application.Current.FindResource("Welcome_Desc").ToString());
+            else OpenInTab(Selected.ToString());
+            ((SearchBox.Style.Resources.Values.Cast<object>().ToList()[0] as VisualBrush)
+                .Visual as Label).Content = Application.Current.FindResource("SearchBoxText").ToString();
+        }
         public void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
 
@@ -88,6 +112,7 @@ namespace ModShardLauncher
         private void OpenInTab(string obj)
         {
             ModThings.Content = ModLoader.Mods[obj];
+            ModThings.InvalidateVisual();
         }
 
         private void MainTree_Selected(object sender, RoutedEventArgs e)
