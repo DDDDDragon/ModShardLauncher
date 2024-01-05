@@ -4,10 +4,65 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Interop;
 using Serilog;
+using UndertaleModLib;
+using UndertaleModLib.Decompiler;
 using UndertaleModLib.Models;
 
 namespace ModShardLauncher
 {
+    public enum Match 
+    {
+        Before,
+        Matching,
+        After,
+    }
+    public enum PatchingWay 
+    {
+        GML,
+        AssemblyAsInstructions,
+        AssemblyAsString,
+    }
+    public class Header
+    {
+        public readonly string fileName;
+        public readonly UndertaleCode originalCode;
+        public readonly PatchingWay patchingWay;
+
+        public Header(string fileName, UndertaleCode originalCode, PatchingWay patchingWay) 
+        {
+            this.fileName = fileName;
+            this.originalCode = originalCode;
+            this.patchingWay = patchingWay;
+        }
+    }
+    public class ModSummary
+    {
+        public readonly string fileName;
+        public readonly string newCode;
+        public readonly PatchingWay patchingWay;
+
+        public ModSummary(string fileName, string newCode, PatchingWay patchingWay) 
+        {
+            this.fileName = fileName;
+            this.newCode = newCode;
+            this.patchingWay = patchingWay;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} was patched by {1}:\n{2}", fileName, patchingWay, newCode);
+        }
+    }
+    public class FileEnumerable<T>
+    {
+        public readonly Header header;
+        public readonly IEnumerable<T> ienumerable;
+        public FileEnumerable(Header header, IEnumerable<T> ienumerable) 
+        {
+            this.header = header;
+            this.ienumerable = ienumerable;
+        }
+    }
     public static class EnumerableExtensions
     {
         /// <summary>
@@ -22,12 +77,6 @@ namespace ModShardLauncher
             foreach(T element in ienumerable) {
                 yield return (ind++, element);
             }
-        }
-        public enum Match 
-        {
-            Before,
-            Matching,
-            After,
         }
         public static IEnumerable<(Match, string)> MatchFrom(this IEnumerable<string> ienumerable, IEnumerable<string> other) 
         {
@@ -60,6 +109,79 @@ namespace ModShardLauncher
         {
             return ienumerable.MatchFrom(other.Split("\n"));
         }
+        public static FileEnumerable<(Match, string)> MatchFrom(this FileEnumerable<string> fe, string other) 
+        {
+            return new(fe.header, fe.ienumerable.MatchFrom(other.Split("\n")));
+        }
+        public static FileEnumerable<(Match, string)> MatchFrom(this FileEnumerable<string> fe, ModFile modFile, string fileName) 
+        {
+            return new(fe.header, fe.ienumerable.MatchFrom(modFile.GetCode(fileName).Split("\n")));
+        }
+        public static IEnumerable<(Match, string)> MatchBelow(this IEnumerable<string> ienumerable, IEnumerable<string> other, int len)
+        {
+            Match m = Match.Before;
+            string? otherString = null;
+            int i = 0;
+            IEnumerator<string> otherEnumerator = other.GetEnumerator();
+            if(otherEnumerator.MoveNext())
+                otherString = otherEnumerator.Current;
+
+            foreach (string element in ienumerable)
+            {
+                if (m == Match.Before && otherString != null && element.Contains(otherString)) // can only test the other iter if in Before
+                {
+                    m = Match.Before;
+                    yield return (m, element);
+                    if(otherEnumerator.MoveNext())
+                        otherString = otherEnumerator.Current;
+                        if (!element.Contains(otherString)) 
+                        {
+                            // doesnt contains anymore, time to go in matching
+                            m = Match.Matching;
+                        }
+                    else {
+                        // consumed the iter, time go to in matching
+                        m = Match.Matching;
+                    }
+                }
+                else if (m == Match.Before) // here when you still havent encounter the other iter
+                {
+                    yield return (Match.Before, element);
+                }
+                else if (i < len) // here when either the iter was consumed, either it was not matching anymore
+                {
+                    yield return (Match.Matching, element);
+                    i++; // can stay only len in matching
+                }
+                else // here in after, nothing to do
+                {
+                    yield return (Match.After, element);
+                }
+            }
+        }
+        public static IEnumerable<(Match, string)> MatchBelow(this IEnumerable<string> ienumerable, string other, int len) 
+        {
+            return ienumerable.MatchBelow(other.Split("\n"), len);
+        }
+        public static FileEnumerable<(Match, string)> MatchBelow(this FileEnumerable<string> fe, string other, int len) 
+        {
+            return new(fe.header, fe.ienumerable.MatchBelow(other.Split("\n"), len));
+        }
+        public static FileEnumerable<(Match, string)> MatchBelow(this FileEnumerable<string> fe, ModFile modFile, string fileName, int len) 
+        {
+            return new(fe.header, fe.ienumerable.MatchBelow(modFile.GetCode(fileName).Split("\n"), len));
+        }
+        public static IEnumerable<(Match, string)> MatchAll(this IEnumerable<string> ienumerable)
+        {
+            foreach (string element in ienumerable)
+            {
+                yield return (Match.Matching, element);
+            }
+        }
+        public static FileEnumerable<(Match, string)> MatchAll(this FileEnumerable<string> fe) 
+        {
+            return new(fe.header, fe.ienumerable.MatchAll());
+        }
         public static IEnumerable<T> Peek<T>(this IEnumerable<T> ienumerable)
         {
             foreach(T element in ienumerable)
@@ -67,6 +189,10 @@ namespace ModShardLauncher
                 Log.Information(element?.ToString() ?? "<null>");
                 yield return element;
             }
+        }
+        public static FileEnumerable<T> Peek<T>(this FileEnumerable<T> fe)
+        {
+            return new(fe.header, fe.ienumerable.Peek());
         }
         public static IEnumerable<string> Remove(this IEnumerable<(Match, string)> ienumerable)
         {
@@ -76,6 +202,10 @@ namespace ModShardLauncher
                     yield return element;
             }
         }
+        public static  FileEnumerable<string> Remove(this FileEnumerable<(Match, string)> fe)
+        {
+            return new(fe.header, fe.ienumerable.Remove());
+        }
         public static IEnumerable<string> KeepOnly(this IEnumerable<(Match, string)> ienumerable)
         {
             foreach((Match matched, string element) in ienumerable)
@@ -84,6 +214,10 @@ namespace ModShardLauncher
                     yield return element;
             }
         }
+        public static  FileEnumerable<string> KeepOnly(this FileEnumerable<(Match, string)> fe)
+        {
+            return new(fe.header, fe.ienumerable.KeepOnly());
+        }
         public static IEnumerable<string> FilterMatch(this IEnumerable<(Match, string)> ienumerable, Predicate<Match> predicate)
         {
             foreach((Match matched, string element) in ienumerable)
@@ -91,6 +225,10 @@ namespace ModShardLauncher
                 if(predicate(matched))
                     yield return element;
             }
+        }
+        public static  FileEnumerable<string> FilterMatch(this FileEnumerable<(Match, string)> fe, Predicate<Match> predicate)
+        {
+            return new(fe.header, fe.ienumerable.FilterMatch(predicate));
         }
         public static IEnumerable<string> InsertBelow(this IEnumerable<(Match, string)> ienumerable, IEnumerable<string> inserting)
         {
@@ -122,6 +260,14 @@ namespace ModShardLauncher
         {
             return ienumerable.InsertBelow(inserting.Split("\n"));
         }
+        public static  FileEnumerable<string> InsertBelow(this FileEnumerable<(Match, string)> fe, string inserting)
+        {
+            return new(fe.header, fe.ienumerable.InsertBelow(inserting.Split("\n")));
+        }
+        public static  FileEnumerable<string> InsertBelow(this FileEnumerable<(Match, string)> fe, ModFile modFile, string fileName)
+        {
+            return new(fe.header, fe.ienumerable.InsertBelow(modFile.GetCode(fileName).Split("\n")));
+        }
         public static IEnumerable<string> InsertAbove(this IEnumerable<(Match, string)> ienumerable, IEnumerable<string> inserting)
         {
             bool alreadyInserted = false;
@@ -141,6 +287,14 @@ namespace ModShardLauncher
         public static IEnumerable<string> InsertAbove(this IEnumerable<(Match, string)> ienumerable, string inserting)
         {
             return ienumerable.InsertAbove(inserting.Split("\n"));
+        }
+        public static  FileEnumerable<string> InsertAbove(this FileEnumerable<(Match, string)> fe, string inserting)
+        {
+            return new(fe.header, fe.ienumerable.InsertAbove(inserting.Split("\n")));
+        }
+        public static  FileEnumerable<string> InsertAbove(this FileEnumerable<(Match, string)> fe, ModFile modFile, string fileName)
+        {
+            return new(fe.header, fe.ienumerable.InsertAbove(modFile.GetCode(fileName).Split("\n")));
         }
         public static IEnumerable<string> ReplaceBy(this IEnumerable<(Match, string)> ienumerable, IEnumerable<string> replacing)
         {
@@ -165,6 +319,43 @@ namespace ModShardLauncher
         public static IEnumerable<string> ReplaceBy(this IEnumerable<(Match, string)> ienumerable, string replacing)
         {
             return ienumerable.ReplaceBy(replacing.Split("\n"));
+        }
+        public static  FileEnumerable<string> ReplaceBy(this FileEnumerable<(Match, string)> fe, string inserting)
+        {
+            return new(fe.header, fe.ienumerable.ReplaceBy(inserting.Split("\n")));
+        }
+        public static  FileEnumerable<string> ReplaceBy(this FileEnumerable<(Match, string)> fe, ModFile modFile, string fileName)
+        {
+            return new(fe.header, fe.ienumerable.ReplaceBy(modFile.GetCode(fileName).Split("\n")));
+        }
+        public static ModSummary Save(this FileEnumerable<string> fe)
+        {
+            try {
+                string newCode = string.Join("\n", fe.ienumerable);
+                switch(fe.header.patchingWay) 
+                {
+                    case PatchingWay.GML:
+                        fe.header.originalCode.ReplaceGML(newCode, ModLoader.Data);
+                    break;
+
+                    case PatchingWay.AssemblyAsString:
+                        fe.header.originalCode.Replace(Assembler.Assemble(newCode, ModLoader.Data));
+                    break;
+
+                    default:
+                    break;
+                }
+                Log.Information("Successfully patched function {{{0}}} with {{{1}}}", fe.header.fileName, fe.header.patchingWay.ToString());
+                return new(
+                    fe.header.fileName,
+                    newCode,
+                    fe.header.patchingWay
+                );
+            }
+            catch(Exception ex) {
+                Log.Error(ex, "Something went wrong");
+                throw;
+            }
         }
     }
     /// <summary>

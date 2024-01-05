@@ -111,80 +111,6 @@ namespace ModShardLauncher
                 throw;
             }
         }
-        public static UndertaleInstruction.Reference<UndertaleVariable> CreateRefVariable(string name, UndertaleInstruction.InstanceType instanceType) 
-        {
-            if (Data == null) {
-                throw new NullReferenceException("Data is null");
-            }
-
-            UndertaleString str = Data.Strings.MakeString(name, out int id);
-            bool bytecode14 = Data.GeneralInfo?.BytecodeVersion <= 14;
-            uint oldId = Data.VarCount1;
-
-            if (bytecode14)
-			    instanceType = UndertaleInstruction.InstanceType.Undefined;
-
-            if (!bytecode14)
-            {
-                if (Data.IsVersionAtLeast(2, 3))
-                {
-                    Data.VarCount1++;
-                    Data.VarCount2 = Data.VarCount1;
-                    oldId = (uint)id;
-                }
-                else if (!Data.DifferentVarCounts)
-                {
-                    // Bytecode 16+
-                    Data.VarCount1++;
-                    Data.VarCount2++;
-                }
-                else
-                {
-                    // Bytecode 15
-                    if (instanceType == UndertaleInstruction.InstanceType.Self)
-                    {
-                        oldId = Data.VarCount2;
-                        Data.VarCount2++;
-                    }
-                    else if (instanceType == UndertaleInstruction.InstanceType.Global)
-                    {
-                        Data.VarCount1++;
-                    }
-                }
-            }
-
-            UndertaleVariable variable = new()
-            {
-                Name = str,
-                InstanceType = instanceType,
-                VarID = bytecode14 ? 0 : (int)oldId,
-                NameStringID = id
-            };
-            Data.Variables.Add(variable);
-            Log.Information(string.Format("Created variable: {0}", variable.ToString()));
-
-            return new UndertaleInstruction.Reference<UndertaleVariable>(variable, UndertaleInstruction.VariableType.Normal);
-        }
-        public static UndertaleInstruction.Reference<UndertaleVariable> GetRefVariableOrCreate(string name, UndertaleInstruction.InstanceType instanceType)
-        {
-            try {
-                UndertaleInstruction.Reference<UndertaleVariable> refVariable;
-                UndertaleVariable? variable = Data.Variables.FirstOrDefault(t => t.Name?.Content == name);
-                
-                if (variable == null) 
-                    refVariable = CreateRefVariable(name, instanceType);
-                else
-                    refVariable = new UndertaleInstruction.Reference<UndertaleVariable>(variable, UndertaleInstruction.VariableType.Normal);
-
-                Log.Information(string.Format("Find variable: {0}", refVariable.ToString()));
-
-                return refVariable;
-            }
-            catch(Exception ex) {
-                Log.Error(ex, "Something went wrong");
-                throw;
-            }
-        }
         public static UndertaleString GetString(string name)
         {
             try {
@@ -198,26 +124,39 @@ namespace ModShardLauncher
                 throw;
             }
         }
-        public static UndertaleResourceById<UndertaleString, UndertaleChunkSTRG> CreateString(string name) 
-        {
-            UndertaleString str = Data.Strings.MakeString(name, out int ind);
-            Log.Information(string.Format("Created string: {0}", str.ToString()));
-            return new UndertaleResourceById<UndertaleString, UndertaleChunkSTRG>(str, ind);
-        }
-        public static UndertaleResourceById<UndertaleString, UndertaleChunkSTRG> GetStringOrCreate(string name)
+        public static FileEnumerable<string> LoadGML(string fileName)
         {
             try {
-                UndertaleResourceById<UndertaleString, UndertaleChunkSTRG> stringById;
-                (int ind, UndertaleString str) = Data.Strings.Enumerate().FirstOrDefault(x => x.Item2.Content == name);
-                
-                if (str == null)
-                    stringById = CreateString(name);
-                else
-                    stringById = new UndertaleResourceById<UndertaleString, UndertaleChunkSTRG>(str, ind);
+                UndertaleCode code = ModLoader.GetUMTCodeFromFile(fileName);
+                GlobalDecompileContext context = new(ModLoader.Data, false);
 
-                Log.Information(string.Format("Find string: {0}", stringById.ToString()));
+                return new(
+                    new(
+                        fileName,
+                        code,
+                        PatchingWay.GML
+                    ),
+                    Decompiler.Decompile(code, context).Split("\n")
+                );
+            }
+            catch(Exception ex) {
+                Log.Error(ex, "Something went wrong");
+                throw;
+            }
+        }
+        public static FileEnumerable<string> LoadAssemblyAsString(string fileName)
+        {
+            try {
+                UndertaleCode code = ModLoader.GetUMTCodeFromFile(fileName);
 
-                return stringById;
+                return new(
+                    new(
+                        fileName,
+                        code,
+                        PatchingWay.AssemblyAsString
+                    ),
+                    code.Disassemble(ModLoader.Data.Variables, ModLoader.Data.CodeLocals.For(code)).Split("\n")
+                );
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");
@@ -227,10 +166,10 @@ namespace ModShardLauncher
         /// <summary>
         /// Return the UndertaleCode from <c>name</c>.
         /// </summary>
-        public static UndertaleCode GetUMTCodeFromFile(string file_name)
+        public static UndertaleCode GetUMTCodeFromFile(string fileName)
         {
             try {
-                UndertaleCode code = Data.Code.First(t => t.Name?.Content == file_name);
+                UndertaleCode code = Data.Code.First(t => t.Name?.Content == fileName);
                 Log.Information(string.Format("Find function: {0}", code.ToString()));
 
                 return code;
@@ -240,10 +179,10 @@ namespace ModShardLauncher
                 throw;
             }
         }
-        public static string GetStringGMLFromFile(string file_name)
+        public static string GetStringGMLFromFile(string fileName)
         {
             try {
-                UndertaleCode code = GetUMTCodeFromFile(file_name);
+                UndertaleCode code = GetUMTCodeFromFile(fileName);
                 GlobalDecompileContext context = new(Data, false);
 
                 return Decompiler.Decompile(code, context);
@@ -253,57 +192,11 @@ namespace ModShardLauncher
                 throw;
             }
         }
-        public static IEnumerable<string> LoadGML(string file_name)
+        public static void SetStringGMLInFile(string codeAsString, string fileName)
         {
             try {
-                UndertaleCode code = GetUMTCodeFromFile(file_name);
-                GlobalDecompileContext context = new(Data, false);
-
-                return Decompiler.Decompile(code, context).Split("\n");
-            }
-            catch(Exception ex) {
-                Log.Error(ex, "Something went wrong");
-                throw;
-            }
-        }
-        public static IEnumerable<string> LoadAssemblyString(string file_name)
-        {
-            try {
-                UndertaleCode code = GetUMTCodeFromFile(file_name);
-                return code.Disassemble(Data.Variables, Data.CodeLocals.For(code)).Split("\n");
-            }
-            catch(Exception ex) {
-                Log.Error(ex, "Something went wrong");
-                throw;
-            }
-        }
-        public static void SetStringGMLInFile(string code_as_string, string file_name)
-        {
-            try {
-                UndertaleCode code = GetUMTCodeFromFile(file_name);
-                code.ReplaceGML(code_as_string, Data);
-            }
-            catch(Exception ex) {
-                Log.Error(ex, "Something went wrong");
-                throw;
-            }
-        }
-        public static void SaveGML(this IEnumerable<string> ienumerable, string file_name)
-        {
-            try {
-                UndertaleCode code = GetUMTCodeFromFile(file_name);
-                code.ReplaceGML(string.Join("\n", ienumerable), Data);
-            }
-            catch(Exception ex) {
-                Log.Error(ex, "Something went wrong");
-                throw;
-            }
-        }
-        public static void SaveAssemblyString(this IEnumerable<string> ienumerable, string file_name)
-        {
-            try {
-                UndertaleCode code = GetUMTCodeFromFile(file_name);
-                code.Replace(Assembler.Assemble(string.Join("\n", ienumerable), Data));
+                UndertaleCode code = GetUMTCodeFromFile(fileName);
+                code.ReplaceGML(codeAsString, Data);
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");
@@ -311,7 +204,7 @@ namespace ModShardLauncher
             }
         }
         /// <summary>
-        /// Insert GML <paramref name="code"/> from a string in <paramref name="file"/> at a given <paramref name="position"/>.
+        /// Insert GML <paramref name="codeAsString"/> from a string in <paramref name="fileName"/> at a given <paramref name="position"/>.
         /// <para>
         /// <example>For example:
         /// <code>
@@ -321,19 +214,19 @@ namespace ModShardLauncher
         /// </example>
         /// </para>
         /// </summary>
-        /// <param name="code">The code to insert.</param>
-        /// <param name="file">The file to be patched.</param>
+        /// <param name="codeAsString">The code to insert.</param>
+        /// <param name="fileName">The file to be patched.</param>
         /// <param name="position">The exact position to insert.</param>
-        public static void InsertGMLString(string code_as_string, string file_name, int position)
+        public static void InsertGMLString(string codeAsString, string fileName, int position)
         {
             try {
-                Log.Information(string.Format("Trying insert code in: {0}", file_name.ToString()));
+                Log.Information(string.Format("Trying insert code in: {0}", fileName.ToString()));
 
-                List<string>? original_code = GetStringGMLFromFile(file_name).Split("\n").ToList();
-                original_code.Insert(position, code_as_string);
-                SetStringGMLInFile(string.Join("\n", original_code), file_name);
+                List<string>? originalCode = GetStringGMLFromFile(fileName).Split("\n").ToList();
+                originalCode.Insert(position, codeAsString);
+                SetStringGMLInFile(string.Join("\n", originalCode), fileName);
 
-                Log.Information(string.Format("Patched function with InsertGMLString: {0}", file_name.ToString()));
+                Log.Information(string.Format("Patched function with InsertGMLString: {0}", fileName.ToString()));
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");
@@ -354,16 +247,16 @@ namespace ModShardLauncher
         /// <param name="code">The code to insert.</param>
         /// <param name="file">The file to be patched.</param>
         /// <param name="position">The exact position to insert.</param>
-        public static void ReplaceGMLString(string code_as_string, string file_name, int position)
+        public static void ReplaceGMLString(string codeAsString, string fileName, int position)
         {
             try {
-                Log.Information(string.Format("Trying replace code in: {0}", file_name.ToString()));
+                Log.Information(string.Format("Trying replace code in: {0}", fileName.ToString()));
 
-                List<string>? original_code = GetStringGMLFromFile(file_name).Split("\n").ToList();
-                original_code[position] = code_as_string;
-                SetStringGMLInFile(string.Join("\n", original_code), file_name);
+                List<string>? originalCode = GetStringGMLFromFile(fileName).Split("\n").ToList();
+                originalCode[position] = codeAsString;
+                SetStringGMLInFile(string.Join("\n", originalCode), fileName);
 
-                Log.Information(string.Format("Patched function with ReplaceGMLString: {0}", file_name.ToString()));
+                Log.Information(string.Format("Patched function with ReplaceGMLString: {0}", fileName.ToString()));
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");
@@ -386,91 +279,109 @@ namespace ModShardLauncher
         /// <param name="code">The code to insert.</param>
         /// <param name="file">The file to be patched.</param>
         /// <param name="position">The exact position to insert.</param>
-        public static void ReplaceGMLString(string code_as_string, string file_name, int start, int len)
+        public static void ReplaceGMLString(string codeAsString, string fileName, int start, int len)
         {
             try {
-                Log.Information(string.Format("Trying replace code in: {0}", file_name.ToString()));
+                Log.Information(string.Format("Trying replace code in: {0}", fileName.ToString()));
 
-                List<string>? original_code = GetStringGMLFromFile(file_name).Split("\n").ToList();
-                original_code[start] = code_as_string;
-                for (int i = 1; i < Math.Min(len, original_code.Count - start); i++) {
-                    original_code[start + i] = "";
+                List<string>? originalCode = GetStringGMLFromFile(fileName).Split("\n").ToList();
+                originalCode[start] = codeAsString;
+                for (int i = 1; i < Math.Min(len, originalCode.Count - start); i++) {
+                    originalCode[start + i] = "";
                 }
 
-                SetStringGMLInFile(string.Join("\n", original_code), file_name);
+                SetStringGMLInFile(string.Join("\n", originalCode), fileName);
 
-                Log.Information(string.Format("Patched function with ReplaceGMLString: {0}", file_name.ToString()));
+                Log.Information(string.Format("Patched function with ReplaceGMLString: {0}", fileName.ToString()));
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");
                 throw;
             }
         }
-        public static string GetDisassemblyCode(string name)
+        public static string GetAssemblyString(string fileName)
         {
             try {
-                var func = GetUMTCodeFromFile(name);
-                var text = func.Disassemble(Data.Variables, Data.CodeLocals.For(func));
-                
-                return text;
+                UndertaleCode func = GetUMTCodeFromFile(fileName);
+                return func.Disassemble(Data.Variables, Data.CodeLocals.For(func));
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");
                 throw;
             }
         }
-        public static void SetDisassemblyCode(string Code, string name)
+        public static void SetAssemblyString(string codeAsString, string fileName)
         {
             try {
-                var code = GetUMTCodeFromFile(name);
-                code.Replace(Assembler.Assemble(Code, Data));
+                UndertaleCode originalCode = GetUMTCodeFromFile(fileName);
+                originalCode.Replace(Assembler.Assemble(codeAsString, Data));
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");
                 throw;
             }
         }
-        public static void PatchDisassemblyCode(string name, Func<IEnumerable<UndertaleInstruction>, IEnumerable<UndertaleInstruction>> patch)
+        public static void InsertAssemblyString(string codeAsString, string fileName, int position)
+        {
+            try {
+                Log.Information(string.Format("Trying insert assembly in: {0}", fileName.ToString()));
+
+                List<string>? originalCode = GetAssemblyString(fileName).Split("\n").ToList();
+                originalCode.Insert(position, codeAsString);
+                SetAssemblyString(string.Join("\n", originalCode), fileName);
+
+                Log.Information(string.Format("Patched function with InsertDisassemblyCode: {0}", fileName.ToString()));
+            }
+            catch(Exception ex) {
+                Log.Error(ex, "Something went wrong");
+                throw;
+            }
+        }
+        public static void ReplaceAssemblyString(string codeAsString, string fileName, int position)
+        {
+            try {
+                Log.Information(string.Format("Trying replace assembly in: {0}", fileName.ToString()));
+
+                List<string>? originalCode = GetAssemblyString(fileName).Split("\n").ToList();
+                originalCode[position] = codeAsString;
+                SetAssemblyString(string.Join("\n", originalCode), fileName);
+
+                Log.Information(string.Format("Patched function with ReplaceDisassemblyCode: {0}", fileName.ToString()));
+            }
+            catch(Exception ex) {
+                Log.Error(ex, "Something went wrong");
+                throw;
+            }
+        }
+        public static void ReplaceAssemblyString(string codeAsString, string fileName, int start, int len)
+        {
+            try {
+                Log.Information(string.Format("Trying replace assembly in: {0}", fileName.ToString()));
+
+                List<string>? originalCode = GetAssemblyString(fileName).Split("\n").ToList();
+                originalCode[start] = codeAsString;
+                for (int i = 1; i < Math.Min(len, originalCode.Count - start); i++) {
+                    originalCode[start + i] = "";
+                }
+
+                SetAssemblyString(string.Join("\n", originalCode), fileName);
+
+                Log.Information(string.Format("Patched function with ReplaceDisassemblyCode: {0}", fileName.ToString()));
+            }
+            catch(Exception ex) {
+                Log.Error(ex, "Something went wrong");
+                throw;
+            }
+        }
+        public static void InjectAssemblyInstruction(string name, Func<IEnumerable<UndertaleInstruction>, IEnumerable<UndertaleInstruction>> patch)
         {
             try {
                 Log.Information(string.Format("Trying patch assembly in: {0}", name.ToString()));
 
-                var code = GetUMTCodeFromFile(name);
-                code.Replace(patch(code.Instructions).ToList());
+                UndertaleCode originalCode = GetUMTCodeFromFile(name);
+                originalCode.Replace(patch(originalCode.Instructions).ToList());
 
                 Log.Information(string.Format("Patched function with PatchDisassemblyCode: {0}", name.ToString()));
-            }
-            catch(Exception ex) {
-                Log.Error(ex, "Something went wrong");
-                throw;
-            }
-        }
-        public static void InsertDisassemblyCode(string Code, string name, int pos)
-        {
-            try {
-                Log.Information(string.Format("Trying insert assembly in: {0}", name.ToString()));
-
-                var code = GetDisassemblyCode(name).Split("\n").ToList();
-                code.Insert(pos, Code);
-                SetDisassemblyCode(string.Join("\n", code), name);
-
-                Log.Information(string.Format("Patched function with InsertDisassemblyCode: {0}", name.ToString()));
-            }
-            catch(Exception ex) {
-                Log.Error(ex, "Something went wrong");
-                throw;
-            }
-        }
-        public static void ReplaceDisassemblyCode(string Code, string name, int pos)
-        {
-            try {
-                Log.Information(string.Format("Trying replace assembly in: {0}", name.ToString()));
-
-                var code = GetDisassemblyCode(name).Split("\n").ToList();
-                code[pos] = Code;
-                SetDisassemblyCode(string.Join("\n", code), name);
-
-                Log.Information(string.Format("Patched function with ReplaceDisassemblyCode: {0}", name.ToString()));
             }
             catch(Exception ex) {
                 Log.Error(ex, "Something went wrong");

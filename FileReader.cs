@@ -41,7 +41,7 @@ namespace ModShardLauncher
         public Mod instance { get; set; }
         public bool isEnabled { get; set; }
         public bool isExisted => File.Exists(Path);
-        public byte[] Icon { get; set; } = new byte[0];
+        public byte[] Icon { get; set; } = Array.Empty<byte>();
         public override string ToString()
         {
             return instance.ToString();
@@ -52,18 +52,19 @@ namespace ModShardLauncher
             {
                 MessageBox.Show(Application.Current.FindResource("ModLostWarning").ToString() + " : " + Name);
                 ModLoader.LoadFiles();
-                return new byte[0];
+                return Array.Empty<byte>();
             }
-            var file = Files.FirstOrDefault(t => t.name == name);
-            if(file == default) file = Files.FirstOrDefault(t => t.name.Split("\\").Last() == name);
-            if (file != default)
+            // https://sonarsource.github.io/rspec/#/rspec/S6602/csharp
+            // for list, Find should be used instead of FirstOrDefault
+            FileChunk? file = Files.Find(t => t.name == name) ?? Files.Find(t => t.name.Split("\\").Last() == name);
+            if (file != null)
             {
                 if(!Stream.CanRead) Stream = new FileStream(Path, FileMode.Open);
                 Stream.Position = FileOffset;
                 FileReader.Read(Stream, file.offset);
                 return FileReader.Read(Stream, file.length);
             }
-            else return new byte[0];
+            else return Array.Empty<byte>();
         }
         public string GetCode(string name)
         {
@@ -88,62 +89,86 @@ namespace ModShardLauncher
     }
     public class FileReader
     {
-        public static ModFile Read(string path)
+        public static ModFile? Read(string path)
         {
-            FileStream fs = new FileStream(path, FileMode.Open);
-            var file = new ModFile();
-            file.Stream = fs;
-            file.Name = fs.Name.Split("\\").Last().Replace(".sml", "");
+            FileStream fs = new(path, FileMode.Open);
+
+            ModFile file = new()
+            {
+                Stream = fs,
+                Name = fs.Name.Split("\\").Last().Replace(".sml", "")
+            };
+
             if (Encoding.UTF8.GetString(Read(fs, 4)) != "MSLM")
             {
                 fs.Close();
                 return null;
             }
-            var reg = new Regex("0([0-9])");
+
+            Regex? reg = new("0([0-9])");
             file.Version = reg.Replace(Encoding.UTF8.GetString(Read(fs, 12)), "$1");
-            var count = BitConverter.ToInt32(Read(fs, 4), 0);
+
+            int count = BitConverter.ToInt32(Read(fs, 4), 0);
             for(int i = 0; i < count; i++)
             {
-                var len = BitConverter.ToInt32(Read(fs, 4));
-                var chunk = new FileChunk();
-                chunk.name = Encoding.UTF8.GetString(Read(fs, len));
-                chunk.offset = BitConverter.ToInt32(Read(fs, 4));
-                chunk.length = BitConverter.ToInt32(Read(fs, 4));
+                int len = BitConverter.ToInt32(Read(fs, 4));
+
+                FileChunk chunk = new()
+                {
+                    name = Encoding.UTF8.GetString(Read(fs, len)),
+                    offset = BitConverter.ToInt32(Read(fs, 4)),
+                    length = BitConverter.ToInt32(Read(fs, 4))
+                };
+
                 file.Files.Add(chunk);
             }
+
             count = BitConverter.ToInt32(Read(fs, 4), 0);
+
             for (int i = 0; i < count; i++)
             {
-                var len = BitConverter.ToInt32(Read(fs, 4), 0);
-                var chunk = new FileChunk();
-                chunk.name = Encoding.UTF8.GetString(Read(fs, len));
-                chunk.offset = BitConverter.ToInt32(Read(fs, 4));
-                chunk.length = BitConverter.ToInt32(Read(fs, 4));
+                int len = BitConverter.ToInt32(Read(fs, 4), 0);
+
+                FileChunk chunk = new()
+                {
+                    name = Encoding.UTF8.GetString(Read(fs, len)),
+                    offset = BitConverter.ToInt32(Read(fs, 4)),
+                    length = BitConverter.ToInt32(Read(fs, 4))
+                };
+
                 file.Files.Add(chunk);
             }
+
             count = BitConverter.ToInt32(Read(fs, 4), 0);
+
             for (int i = 0; i < count; i++)
             {
-                var len = BitConverter.ToInt32(Read(fs, 4), 0);
-                var chunk = new FileChunk();
-                chunk.name = Encoding.UTF8.GetString(Read(fs, len));
-                chunk.offset = BitConverter.ToInt32(Read(fs, 4));
-                chunk.length = BitConverter.ToInt32(Read(fs, 4));
+                int len = BitConverter.ToInt32(Read(fs, 4), 0);
+
+                FileChunk chunk = new()
+                {
+                    name = Encoding.UTF8.GetString(Read(fs, len)),
+                    offset = BitConverter.ToInt32(Read(fs, 4)),
+                    length = BitConverter.ToInt32(Read(fs, 4))
+                };
+
                 file.Files.Add(chunk);
             }
             file.FileOffset = (int)fs.Position;
             
             if(file.Files.Count > 0)
             {
-                var f = file.Files.Last();
+                FileChunk? f = file.Files.Last();
                 Read(fs, f.offset + f.length);
             }
             count = BitConverter.ToInt32(Read(fs, 4), 0);
             file.Assembly = Assembly.Load(Read(fs, count));
             file.Path = path;
+            
             if (file.FileExist(file.Name + "\\icon.png"))
                 file.Icon = file.GetFile(file.Name + "\\icon.png");
             fs.Close();
+
             return file;
         }
         public static byte[] Read(FileStream fs, int length, int offset = 0)
