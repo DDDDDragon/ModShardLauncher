@@ -7,15 +7,16 @@ namespace ModShardLauncher.ModUtils
         public string Name { get; set; }
         public List<DE2Topic> DialogueTopics { get; set; }
         
-        public DE2Dialogue(string name, List<DE2Topic> dialogueTopics)
+        public DE2Dialogue(string name, params DE2Topic[] dialogueTopics)
         {
             this.Name = name;
-            this.DialogueTopics = dialogueTopics;
+            this.DialogueTopics = new List<DE2Topic>(dialogueTopics);
         }
         
-        public DE2Dialogue AddTopic(DE2Topic topic)
+        public DE2Dialogue AddTopic(params DE2Topic[] topics)
         {
-            this.DialogueTopics.Add(topic);
+            foreach (DE2Topic topic in topics)
+                this.DialogueTopics.Add(topic);
             return this;
         }
     }
@@ -25,15 +26,16 @@ namespace ModShardLauncher.ModUtils
         public string Name { get; set; }
         private List<DE2Option> TopicOptions { get; set; }
         
-        public DE2Topic(string name, List<DE2Option> topicOptions)
+        public DE2Topic(string name, params DE2Option[] topicOptions)
         {
             this.Name = name;
-            this.TopicOptions = topicOptions;
+            this.TopicOptions = new List<DE2Option>(topicOptions);
         }
         
-        public DE2Topic AddOption(DE2Option option)
+        public DE2Topic AddOption(params DE2Option[] options)
         {
-            this.TopicOptions.Add(option);
+            foreach (DE2Option option in options)
+                this.TopicOptions.Add(option);
             return this;
         }
     }
