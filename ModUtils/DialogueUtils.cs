@@ -42,19 +42,13 @@ namespace ModShardLauncher.ModUtils
     {
         public string? Text { get; set; }
         public string? Script { get; set; }
-        public DE2Topic NextTopic { get; set; }
+        public string NextTopic { get; set; }
         
-        public DE2Option(string text, string script, DE2Topic nextTopic)
+        public DE2Option(string text, string script, string nextTopic)
         {
             this.Text = text;
             this.Script = script;
             this.NextTopic = nextTopic;
-        }
-        
-        public DE2Option SetNextTopic(DE2Topic nextTopic)
-        {
-            this.NextTopic = nextTopic;
-            return this;
         }
     }
 
